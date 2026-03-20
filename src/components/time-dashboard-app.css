@@ -127,7 +127,8 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: rgb(248 250 252 / 0.45);
-  margin: 1rem 0 0;
+  margin-block: 1rem 0;
+  margin-inline: 0;
   text-align: center;
 }
 
