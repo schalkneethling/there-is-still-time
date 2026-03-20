@@ -10,7 +10,7 @@
   width: 1px;
 }
 
-:host {
+time-progress-row {
   display: block;
 
   --row-bar: minmax(0, 3fr);
@@ -24,7 +24,8 @@
   display: grid;
   gap: clamp(0.5rem, 2vw, 1rem);
   grid-template-columns: var(--row-label-w) var(--row-bar) var(--row-pct);
-  padding: 0.55rem 0;
+  padding-block: 0.55rem;
+  padding-inline: 0;
 }
 
 .row:last-child {

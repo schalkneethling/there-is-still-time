@@ -1,7 +1,7 @@
 // @ts-check
-import appCss from "./time-dashboard-app.css?inline";
-import "./time-progress-row.js";
-import { computeWidget, WIDGET_KEYS, getDefaultTimeZone } from "../lib/time-calculations.js";
+import { LitElement, html, nothing } from "lit";
+import { createRef, ref } from "lit/directives/ref.js";
+import { WIDGET_KEYS, getDefaultTimeZone } from "../lib/time-calculations.js";
 
 /** @typedef {import("../lib/time-calculations.js").WidgetKey} WidgetKey */
 import {
@@ -11,6 +11,7 @@ import {
   resolvedTimeZone,
 } from "../lib/settings-storage.js";
 import { listTimeZones } from "../lib/timezones.js";
+import "./time-dashboard-board.js";
 
 /** @type {Record<WidgetKey, { id: string; title: string; hint: string }>} */
 const WIDGET_META = {
@@ -29,87 +30,153 @@ const WIDGET_META = {
   year: { id: "year", title: "Year", hint: "Progress through the calendar year." },
 };
 
-export class TimeDashboardApp extends HTMLElement {
+export class TimeDashboardApp extends LitElement {
+  static properties = {
+    _settings: { state: true, type: Object },
+    _tzQuery: { state: true, type: String },
+  };
+
   constructor() {
     super();
-    this.attachShadow({ mode: "open" });
-    /** @type {ReturnType<typeof loadSettings>} */
+    /** @type {import("../lib/settings-storage.js").AppSettings} */
     this._settings = defaultSettings();
-    this._timer = 0;
-    /** @type {AbortController | undefined} */
-    this._listenersAbort = undefined;
+    this._tzQuery = "";
     this._zones = listTimeZones();
+    /** @type {import("lit/directives/ref.js").Ref<HTMLDialogElement>} */
+    this._dialogRef = createRef();
+    /** @type {import("lit/directives/ref.js").Ref<HTMLButtonElement>} */
+    this._openBtnRef = createRef();
+  }
+
+  createRenderRoot() {
+    return this;
   }
 
   connectedCallback() {
-    this._listenersAbort = new AbortController();
-    const { signal } = this._listenersAbort;
-
+    super.connectedCallback();
     this._settings = loadSettings();
-    this.renderStatic();
-    this.bindDrawer(signal);
-    this.syncDrawerFromSettings();
-    this.refresh();
-    this._timer = window.setInterval(() => this.refresh(), 1000);
   }
 
-  disconnectedCallback() {
-    this._listenersAbort?.abort();
-    this._listenersAbort = undefined;
-    window.clearInterval(this._timer);
-    this._timer = 0;
-  }
-
-  renderStatic() {
+  render() {
     const tz = resolvedTimeZone(this._settings);
-    const root = this.shadowRoot;
-    if (!root) return;
-    root.innerHTML = `
-      <style>${appCss}</style>
+    const tzLine = `Time zone · ${tz.replace(/_/g, " ")}${this._settings.timezone ? "" : " (device)"}`;
+    const currentTz = this._settings.timezone ?? "";
+    const q = this._tzQuery.trim().toLowerCase();
+    const matches = q ? this._zones.filter((z) => z.toLowerCase().includes(q)) : this._zones;
+    const grouped = groupByRegion(matches);
+
+    return html`
       <div class="bg" aria-hidden="true"></div>
       <div class="shell">
         <div class="top">
           <div class="title-block">
             <h1 class="title" id="app-heading">There is still time</h1>
-            <p class="sub" id="tz-line">Time zone · ${escapeHtml(tz.replace(/_/g, " "))}</p>
+            <p class="sub" id="tz-line">${tzLine}</p>
           </div>
-          <button type="button" class="settings-btn" id="open-settings" aria-haspopup="dialog" aria-controls="settings-dialog">
+          <button
+            type="button"
+            class="settings-btn"
+            id="open-settings"
+            aria-haspopup="dialog"
+            aria-controls="settings-dialog"
+            ${ref(this._openBtnRef)}
+            @click=${this._onOpenSettings}
+          >
             Settings
           </button>
         </div>
-        <section
-          class="card"
-          id="dashboard-panel"
-          aria-labelledby="app-heading"
-          role="region"
-        >
-          <div class="rows-host" id="rows" role="list" aria-label="Time progress by period"></div>
-          <p class="status" id="clock-status" aria-live="polite"></p>
-        </section>
+        <time-dashboard-board .settings=${this._settings}></time-dashboard-board>
       </div>
-      <dialog class="settings" id="settings-dialog" aria-labelledby="drawer-title">
+      <dialog
+        class="settings"
+        id="settings-dialog"
+        aria-labelledby="drawer-title"
+        ${ref(this._dialogRef)}
+        @close=${this._onDialogClose}
+        @cancel=${this._onDialogCancel}
+      >
         <div class="drawer-inner" id="settings-panel">
           <div class="drawer-head">
             <h2 class="drawer-title" id="drawer-title">Configure</h2>
-            <button type="button" class="close-btn" id="drawer-cancel" aria-label="Cancel and discard changes">
+            <button
+              type="button"
+              class="close-btn"
+              id="drawer-cancel"
+              aria-label="Cancel and discard changes"
+              @click=${this._onCancelClick}
+            >
               Cancel
             </button>
           </div>
-          <p class="hint">Choose which periods appear on the board and which time zone drives the math. Tab moves focus; Escape closes and cancels.</p>
+          <p class="hint">
+            Choose which periods appear on the board and which time zone drives the math. Tab moves focus;
+            Escape closes and cancels.
+          </p>
           <div class="field">
             <label class="field-label" for="tz-filter">Filter time zones</label>
-            <input class="tz-filter" id="tz-filter" type="search" autocomplete="off" placeholder="e.g. Tokyo, Paris" />
+            <input
+              class="tz-filter"
+              id="tz-filter"
+              type="search"
+              autocomplete="off"
+              placeholder="e.g. Tokyo, Paris"
+              .value=${this._tzQuery}
+              @input=${this._onTzFilterInput}
+            />
             <div class="select-wrap">
               <label class="field-label" for="tz-select">Time zone</label>
-              <select id="tz-select" aria-describedby="tz-hint"></select>
+              <select
+                id="tz-select"
+                aria-describedby="tz-hint"
+                .value=${currentTz}
+                @change=${this._onTzSelectChange}
+              >
+                <option value="">
+                  Device default (${getDefaultTimeZone().replace(/_/g, " ")})
+                </option>
+                ${
+                  currentTz && !matches.includes(currentTz)
+                    ? html`<option value=${currentTz}>
+                      ${currentTz.replace(/_/g, " ")} (filtered)
+                    </option>`
+                    : nothing
+                }
+                ${grouped.map(
+                  ([region, zones]) => html`
+                    <optgroup label=${region}>
+                      ${zones.map((z) => html`<option value=${z}>${z.replace(/_/g, " ")}</option>`)}
+                    </optgroup>
+                  `,
+                )}
+              </select>
             </div>
-            <p class="hint" id="tz-hint">Empty selection uses your device time zone (${escapeHtml(getDefaultTimeZone().replace(/_/g, " "))}).</p>
+            <p class="hint" id="tz-hint">
+              Empty selection uses your device time zone (${getDefaultTimeZone().replace(
+                /_/g,
+                " ",
+              )}).
+            </p>
           </div>
           <fieldset class="widgets">
             <legend>Visible widgets</legend>
-            ${WIDGET_KEYS.map((k) => widgetCheckbox(k)).join("")}
+            ${WIDGET_KEYS.map((k) => {
+              const m = WIDGET_META[k];
+              return html`
+                <label class="check">
+                  <input
+                    type="checkbox"
+                    id="w-${k}"
+                    name="widget-${k}"
+                    .checked=${this._settings.widgets.includes(k)}
+                    @change=${(/** @type {Event} */ e) => this._onWidgetCheckChange(k, e)}
+                  />
+                  <span>${m.title}</span>
+                </label>
+                <p class="check-hint hint">${m.hint}</p>
+              `;
+            })}
           </fieldset>
-          <button type="button" class="settings-btn" id="drawer-save">
+          <button type="button" class="settings-btn" id="drawer-save" @click=${this._onSaveClick}>
             Save &amp; close
           </button>
         </div>
@@ -117,222 +184,58 @@ export class TimeDashboardApp extends HTMLElement {
     `;
   }
 
-  /**
-   * @param {string} id
-   * @returns {HTMLElement | null}
-   */
-  $id(id) {
-    return this.shadowRoot?.getElementById(id) ?? null;
-  }
+  _onOpenSettings = () => {
+    this._settings = loadSettings();
+    this._tzQuery = "";
+    void this.updateComplete.then(() => this._dialogRef.value?.showModal());
+  };
+
+  _onDialogClose = () => {
+    this._openBtnRef.value?.focus();
+  };
+
+  _onDialogCancel = () => {
+    this._settings = loadSettings();
+    this._tzQuery = "";
+  };
+
+  _onCancelClick = () => {
+    this._settings = loadSettings();
+    this._tzQuery = "";
+    this._dialogRef.value?.close();
+  };
+
+  _onSaveClick = () => {
+    saveSettings(this._settings);
+    this._dialogRef.value?.close();
+  };
+
+  /** @param {Event} e */
+  _onTzFilterInput = (e) => {
+    const el = /** @type {HTMLInputElement} */ (e.target);
+    this._tzQuery = el.value;
+  };
+
+  /** @param {Event} e */
+  _onTzSelectChange = (e) => {
+    const el = /** @type {HTMLSelectElement} */ (e.target);
+    const val = el.value.trim();
+    this._settings = { ...this._settings, timezone: val.length ? val : null };
+  };
 
   /**
-   * @param {AbortSignal} signal
+   * @param {WidgetKey} key
+   * @param {Event} e
    */
-  bindDrawer(signal) {
-    const dialog = /** @type {HTMLDialogElement | null} */ (this.$id("settings-dialog"));
-    const openBtn = /** @type {HTMLButtonElement | null} */ (this.$id("open-settings"));
-    const saveBtn = /** @type {HTMLButtonElement | null} */ (this.$id("drawer-save"));
-    const cancelBtn = /** @type {HTMLButtonElement | null} */ (this.$id("drawer-cancel"));
-    const tzSelect = /** @type {HTMLSelectElement | null} */ (this.$id("tz-select"));
-    const tzFilter = /** @type {HTMLInputElement | null} */ (this.$id("tz-filter"));
-    if (!dialog || !openBtn || !saveBtn || !cancelBtn || !tzSelect || !tzFilter) return;
-
-    const listenOpts = { signal };
-
-    openBtn.addEventListener(
-      "click",
-      () => {
-        this._settings = loadSettings();
-        this.populateZoneSelect(tzFilter.value.trim());
-        this.syncDrawerFromSettings();
-        dialog.showModal();
-      },
-      listenOpts,
-    );
-
-    dialog.addEventListener(
-      "close",
-      () => {
-        openBtn.focus();
-      },
-      listenOpts,
-    );
-
-    cancelBtn.addEventListener(
-      "click",
-      () => {
-        this._settings = loadSettings();
-        this.syncDrawerFromSettings();
-        this.refresh();
-        dialog.close();
-      },
-      listenOpts,
-    );
-
-    saveBtn.addEventListener(
-      "click",
-      () => {
-        this.readDrawerIntoSettings();
-        saveSettings(this._settings);
-        this.refresh();
-        dialog.close();
-      },
-      listenOpts,
-    );
-
-    dialog.addEventListener(
-      "cancel",
-      () => {
-        this._settings = loadSettings();
-        this.refresh();
-      },
-      listenOpts,
-    );
-
-    tzFilter.addEventListener(
-      "input",
-      () => {
-        this.populateZoneSelect(tzFilter.value.trim());
-      },
-      listenOpts,
-    );
-
-    tzSelect.addEventListener(
-      "change",
-      () => {
-        /* live preview while open */
-        this.readDrawerIntoSettings();
-        this.refresh();
-      },
-      listenOpts,
-    );
-
-    for (const k of WIDGET_KEYS) {
-      const el = /** @type {HTMLInputElement | null} */ (this.$id(`w-${k}`));
-      el?.addEventListener(
-        "change",
-        () => {
-          this.readDrawerIntoSettings();
-          this.refresh();
-        },
-        listenOpts,
-      );
-    }
-
-    this.populateZoneSelect("");
-  }
-
-  /**
-   * @param {string} filter
-   */
-  populateZoneSelect(filter) {
-    const sel = /** @type {HTMLSelectElement} */ (this.$id("tz-select"));
-    const q = filter.toLowerCase();
-    const matches = q ? this._zones.filter((z) => z.toLowerCase().includes(q)) : this._zones;
-    const grouped = groupByRegion(matches);
-    const current = this._settings.timezone ?? "";
-    sel.innerHTML = "";
-    const optDevice = document.createElement("option");
-    optDevice.value = "";
-    optDevice.textContent = `Device default (${getDefaultTimeZone().replace(/_/g, " ")})`;
-    sel.appendChild(optDevice);
-    if (current && !matches.includes(current)) {
-      const o = document.createElement("option");
-      o.value = current;
-      o.textContent = `${current.replace(/_/g, " ")} (filtered)`;
-      sel.appendChild(o);
-    }
-    for (const [region, zones] of grouped) {
-      const og = document.createElement("optgroup");
-      og.label = region;
-      for (const z of zones) {
-        const o = document.createElement("option");
-        o.value = z;
-        o.textContent = z.replace(/_/g, " ");
-        og.appendChild(o);
-      }
-      sel.appendChild(og);
-    }
-    sel.value = current;
-    if (current && sel.value !== current) sel.value = "";
-  }
-
-  syncDrawerFromSettings() {
-    for (const k of WIDGET_KEYS) {
-      const el = /** @type {HTMLInputElement | null} */ (this.$id(`w-${k}`));
-      if (el) el.checked = this._settings.widgets.includes(k);
-    }
-    const sel = /** @type {HTMLSelectElement} */ (this.$id("tz-select"));
-    if (sel) {
-      const v = this._settings.timezone ?? "";
-      sel.value = v;
-    }
-  }
-
-  readDrawerIntoSettings() {
-    const widgets = WIDGET_KEYS.filter((k) => {
-      const el = /** @type {HTMLInputElement | null} */ (this.$id(`w-${k}`));
-      return el?.checked;
-    });
-    this._settings.widgets = widgets.length ? widgets : [...WIDGET_KEYS];
-    const sel = /** @type {HTMLSelectElement} */ (this.$id("tz-select"));
-    const val = sel?.value?.trim() ?? "";
-    this._settings.timezone = val.length ? val : null;
-  }
-
-  refresh() {
-    const tz = resolvedTimeZone(this._settings);
-    const tzLine = this.$id("tz-line");
-    if (tzLine)
-      tzLine.textContent = `Time zone · ${tz.replace(/_/g, " ")}${this._settings.timezone ? "" : " (device)"}`;
-
-    const rowsHost = this.$id("rows");
-    const clockEl = this.$id("clock-status");
-    if (!rowsHost) return;
-
-    const now = Date.now();
-    rowsHost.innerHTML = "";
-
-    const ordered = WIDGET_KEYS.filter((k) => this._settings.widgets.includes(k));
-    for (const key of ordered) {
-      const data = computeWidget(key, now, tz);
-      const row = document.createElement("time-progress-row");
-      row.setAttribute("role", "listitem");
-      row.setAttribute("kind", key);
-      row.setAttribute("label", data.label);
-      row.setAttribute("percent", String(data.percent));
-      row.setAttribute("live", data.live);
-      row.id = `widget-${key}`;
-      rowsHost.appendChild(row);
-    }
-
-    if (clockEl) {
-      clockEl.textContent = new Intl.DateTimeFormat(undefined, {
-        timeZone: tz,
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "numeric",
-        minute: "numeric",
-        second: "numeric",
-      }).format(new Date(now));
-    }
-  }
-}
-
-/**
- * @param {WidgetKey} key
- */
-function widgetCheckbox(key) {
-  const m = WIDGET_META[key];
-  return `
-    <label class="check">
-      <input type="checkbox" id="w-${key}" name="widget-${key}" checked />
-      <span>${m.title}</span>
-    </label>
-    <p class="hint" style="margin: 0.15rem 0 0 1.45rem">${m.hint}</p>
-  `;
+  _onWidgetCheckChange = (key, e) => {
+    const el = /** @type {HTMLInputElement} */ (e.target);
+    const set = new Set(this._settings.widgets);
+    if (el.checked) set.add(key);
+    else set.delete(key);
+    let widgets = /** @type {WidgetKey[]} */ ([...set]);
+    if (!widgets.length) widgets = [...WIDGET_KEYS];
+    this._settings = { ...this._settings, widgets };
+  };
 }
 
 /**
@@ -349,15 +252,6 @@ function groupByRegion(zones) {
     if (list) list.push(z);
   }
   return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-}
-
-/** @param {string} s */
-function escapeHtml(s) {
-  return s
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
 }
 
 customElements.define("time-dashboard-app", TimeDashboardApp);

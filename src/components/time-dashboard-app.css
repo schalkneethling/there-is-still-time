@@ -1,4 +1,4 @@
-:host {
+time-dashboard-app {
   display: block;
 
   --card: rgb(8 10 14 / 92%);
@@ -6,6 +6,10 @@
   --font-matrix: "Doto", "Share Tech Mono", ui-monospace, monospace;
   --glow: rgb(255 255 255 / 4%);
   --text: #f8fafc;
+}
+
+time-dashboard-board {
+  display: block;
 }
 
 .shell {
@@ -267,6 +271,11 @@ fieldset.widgets legend {
   accent-color: #fff;
   block-size: 1rem;
   inline-size: 1rem;
+}
+
+.check-hint {
+  margin-block-start: 0.15rem;
+  margin-inline-start: 1.45rem;
 }
 
 .hint {

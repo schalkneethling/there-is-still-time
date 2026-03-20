@@ -5,7 +5,10 @@ const STORAGE_KEY = "there-is-still-time:v1";
 
 /** @typedef {import("./time-calculations.js").WidgetKey} WidgetKey */
 
-/** @typedef {{ widgets: WidgetKey[]; timezone: string | null }} AppSettings */
+/**
+ * Persisted app preferences.
+ * @typedef {{ widgets: WidgetKey[]; timezone: string | null }} AppSettings
+ */
 
 /** @returns {AppSettings} */
 export function defaultSettings() {

@@ -2,7 +2,7 @@
 
 A progressive web app that shows how much of the **current day, week (ISO, with week number), month, quarter, and year** has elapsed — as percentages with a retro dot-matrix style board.
 
-Built with **[Vite+](https://viteplus.dev)** (Vite toolchain), **vanilla web components**, HTML, CSS, and JavaScript.
+Built with **[Vite+](https://viteplus.dev)** (Vite toolchain), **[Lit](https://lit.dev)** web components (**Light DOM**), HTML, CSS, and JavaScript.
 
 ## Features
 
