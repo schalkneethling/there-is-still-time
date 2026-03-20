@@ -1,12 +1,20 @@
 time-dashboard-app {
   display: block;
 
+  /* WCAG 2.2 AA: body text ≥4.5:1 vs #131722 & vs composite card (~#090b10); borders ≥3:1 for UI. */
+  --border-muted: rgb(255 255 255 / 24%);
+  --border-strong: rgb(255 255 255 / 34%);
   --card: rgb(8 10 14 / 92%);
-  --card-edge: rgb(255 255 255 / 8%);
+  --card-edge: var(--border-muted);
+  --dot-empty: rgb(255 255 255 / 22%);
+  --dot-ring: rgb(255 255 255 / 14%);
   --font-matrix: "Doto", "Share Tech Mono", ui-monospace, monospace;
-  --glow: rgb(255 255 255 / 4%);
+  --glow: rgb(255 255 255 / 6%);
   --page-bg: #131722;
+  --row-rule: rgb(255 255 255 / 20%);
   --text: #f8fafc;
+  --text-muted: #a8b5c4;
+  --text-secondary: #b6c2d0;
 }
 
 time-dashboard-board {
@@ -62,7 +70,7 @@ time-dashboard-board {
 }
 
 .sub {
-  color: rgb(248 250 252 / 55%);
+  color: var(--text-secondary);
   font-family: var(--font-matrix);
   font-size: clamp(0.72rem, 1.75vi, 0.85rem);
   letter-spacing: 0.08em;
@@ -71,8 +79,8 @@ time-dashboard-board {
 }
 
 .settings-btn {
-  background: rgb(255 255 255 / 6%);
-  border: 0.0625rem solid var(--card-edge);
+  background: rgb(255 255 255 / 8%);
+  border: 0.0625rem solid var(--border-muted);
   border-radius: 100rem;
   color: var(--text);
   cursor: pointer;
@@ -90,8 +98,8 @@ time-dashboard-board {
 }
 
 .settings-btn:hover {
-  background: rgb(255 255 255 / 10%);
-  border-color: rgb(255 255 255 / 18%);
+  background: rgb(255 255 255 / 12%);
+  border-color: var(--border-strong);
 }
 
 .settings-btn:focus-visible {
@@ -122,7 +130,7 @@ time-dashboard-board {
 }
 
 .status {
-  color: rgb(248 250 252 / 45%);
+  color: var(--text-muted);
   font-family: var(--font-matrix);
   font-size: 0.76rem;
   letter-spacing: 0.1em;
@@ -132,9 +140,41 @@ time-dashboard-board {
   text-transform: uppercase;
 }
 
+.credit {
+  color: var(--text-muted);
+  font-family: var(--font-matrix);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  margin-block: 1.25rem 0;
+  margin-inline: 0;
+  max-inline-size: min(40rem, 100%);
+  text-align: center;
+}
+
+.credit a {
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-decoration-thickness: 0.0625rem;
+  text-underline-offset: 0.2em;
+}
+
+.credit a:focus-visible {
+  outline: 0.125rem solid var(--text);
+  outline-offset: 0.1875rem;
+}
+
+.credit a:hover {
+  color: var(--text);
+}
+
+.credit a:visited {
+  color: var(--text-secondary);
+}
+
 dialog.settings {
   background: #0a0c10;
-  border: 0.0625rem solid rgb(255 255 255 / 12%);
+  border: 0.0625rem solid var(--border-muted);
   border-radius: 1rem;
   box-shadow: 0 1.5rem 6.25rem rgb(0 0 0 / 65%);
   color: var(--text);
@@ -174,8 +214,8 @@ dialog.settings::backdrop {
 }
 
 .close-btn {
-  background: rgb(255 255 255 / 5%);
-  border: 0.0625rem solid rgb(255 255 255 / 15%);
+  background: rgb(255 255 255 / 8%);
+  border: 0.0625rem solid var(--border-muted);
   border-radius: 0.5rem;
   color: var(--text);
   cursor: pointer;
@@ -203,7 +243,7 @@ dialog.settings::backdrop {
 }
 
 .field-label {
-  color: rgb(248 250 252 / 65%);
+  color: var(--text-secondary);
   font-family: var(--font-matrix);
   font-size: 0.78rem;
   letter-spacing: 0.1em;
@@ -212,8 +252,8 @@ dialog.settings::backdrop {
 
 .select-wrap select,
 .tz-filter {
-  background: rgb(255 255 255 / 4%);
-  border: 0.0625rem solid rgb(255 255 255 / 12%);
+  background: rgb(255 255 255 / 6%);
+  border: 0.0625rem solid var(--border-muted);
   border-radius: 0.5rem;
   color: var(--text);
   font-family: var(--font-matrix);
@@ -234,7 +274,7 @@ dialog.settings::backdrop {
 }
 
 fieldset.widgets {
-  border: 0.0625rem solid rgb(255 255 255 / 10%);
+  border: 0.0625rem solid var(--border-muted);
   border-radius: 0.65rem;
   margin: 0;
   padding-block: 0.75rem 1rem;
@@ -242,7 +282,7 @@ fieldset.widgets {
 }
 
 fieldset.widgets legend {
-  color: rgb(248 250 252 / 75%);
+  color: var(--text-secondary);
   font-family: var(--font-matrix);
   font-size: 0.78rem;
   letter-spacing: 0.1em;
@@ -273,7 +313,7 @@ fieldset.widgets legend {
 }
 
 .hint {
-  color: rgb(248 250 252 / 45%);
+  color: var(--text-muted);
   font-family: var(--font-matrix);
   font-size: 0.7rem;
   letter-spacing: 0.06em;
@@ -324,4 +364,8 @@ time-dashboard-app.maximized time-dashboard-board {
   flex-direction: column;
   inline-size: 100%;
   min-block-size: 0;
+}
+
+time-dashboard-app.maximized .credit {
+  max-inline-size: 100%;
 }

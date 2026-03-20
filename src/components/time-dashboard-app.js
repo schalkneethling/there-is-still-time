@@ -107,6 +107,15 @@ export class TimeDashboardApp extends LitElement {
           </div>
         </div>
         <time-dashboard-board .settings=${this._settings}></time-dashboard-board>
+        <p class="credit">
+          Inspired by
+          <a
+            href="https://playground.nothing.tech/detail/app/Ym0wYycapdPGCUPJ"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Finite Nothing</a>
+          (Nothing Tech).
+        </p>
       </div>
       <dialog
         class="settings"

@@ -20,7 +20,7 @@ time-progress-row {
 
 .row {
   align-items: center;
-  border-bottom: 0.0625rem solid var(--row-rule, rgb(255 255 255 / 6%));
+  border-bottom: 0.0625rem solid var(--row-rule, rgb(255 255 255 / 20%));
   display: grid;
   gap: clamp(0.5rem, 2vi, 1rem);
   grid-template-columns: var(--row-label-w) var(--row-bar) var(--row-pct);
@@ -33,7 +33,7 @@ time-progress-row {
 }
 
 .label {
-  color: var(--text, #f4f4f5);
+  color: var(--text, #f8fafc);
   font-family: var(--font-matrix, monospace);
   font-size: clamp(0.74rem, 2.1vi, 0.9rem);
   letter-spacing: 0.04em;
@@ -56,9 +56,9 @@ time-progress-row {
 }
 
 .dot {
-  background: var(--dot-empty, rgb(255 255 255 / 12%));
+  background: var(--dot-empty, rgb(255 255 255 / 22%));
   border-radius: 50%;
-  box-shadow: inset 0 0 0 0.0625rem rgb(255 255 255 / 4%);
+  box-shadow: inset 0 0 0 0.0625rem var(--dot-ring, rgb(255 255 255 / 14%));
   height: var(--dot-size, 0.4375rem);
   width: var(--dot-size, 0.4375rem);
 }
@@ -71,7 +71,7 @@ time-progress-row {
 }
 
 .pct {
-  color: var(--text, #fafafa);
+  color: var(--text, #f8fafc);
   font-family: var(--font-matrix, monospace);
   font-size: clamp(0.86rem, 2.45vi, 1.02rem);
   font-variant-numeric: tabular-nums;
