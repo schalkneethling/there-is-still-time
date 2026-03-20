@@ -18,6 +18,10 @@ Palette and borders aim for **WCAG 2.2 AA**: primary and secondary text colors a
 - **Settings** dialog: toggle which periods appear; pick a **time zone** (or use the device default). All interval math uses the selected IANA zone
 - **Accessibility**: skip link, semantic structure, `role="progressbar"` with `aria-valuenow`, descriptive `aria-live` text per row, keyboard-friendly native `<dialog>` (Tab / Escape)
 
+## Social sharing
+
+`index.html` includes **Open Graph** and **Twitter / X** (`summary_large_image`) meta tags. The preview image path is **`/timelapse-social-share.png`** — add that file under **`public/`** after you merge (recommended **1200×630** PNG). Crawlers resolve relative image URLs against the page URL; if you deploy under a subpath, set `base` in Vite and use the same path prefix for `og:image` / `twitter:image`, or switch those tags to an absolute production URL (and optional `og:url`).
+
 ## Scripts
 
 | Command          | Description                                                         |
