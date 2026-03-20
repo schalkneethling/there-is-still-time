@@ -5,25 +5,17 @@ export default defineConfig({
   plugins: [
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg"],
-      manifest: {
-        name: "There is still time",
-        short_name: "Still time",
-        description:
-          "See how much of the day, week, month, quarter, and year has elapsed — with configurable widgets and time zones.",
-        theme_color: "#131722",
-        background_color: "#131722",
-        display: "standalone",
-        start_url: "/",
-        icons: [
-          {
-            src: "/favicon.svg",
-            sizes: "any",
-            type: "image/svg+xml",
-            purpose: "any",
-          },
-        ],
-      },
+      includeAssets: [
+        "favicon.svg",
+        "favicon-96x96.png",
+        "favicon.ico",
+        "apple-touch-icon.png",
+        "web-app-manifest-192x192.png",
+        "web-app-manifest-512x512.png",
+        "site.webmanifest",
+      ],
+      // Use RealFaviconGenerator `public/site.webmanifest` (linked from index.html); avoid duplicate <link rel="manifest">.
+      manifest: false,
     }),
   ],
   lint: { options: { typeAware: true, typeCheck: true } },
